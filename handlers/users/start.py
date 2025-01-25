@@ -1,4 +1,4 @@
-from aiogram.filters import CommandStart, CommandObject, Command
+bfrom aiogram.filters import CommandStart, CommandObject, Command
 from loader import dp,bot
 from aiogram import types,html
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -229,9 +229,9 @@ async def start_bot(message: types.Message, command: CommandObject):
     post_text = f"📚 Muqqadima kitobini yutib olish imkoniyati! 🎉\n\n" \
                 f"Do'stlaringizni taklif qilib, ular bilan birga yutish imkoniyatini oshiring!"
     
-    user_text =  f"📚 {html.bold('Muqqadima kitobini yutib olish imkoniyati!')} 🎉\n\n" \
+    user_text =  f"📚 <b>Muqqadima kitobini yutib olish imkoniyati!'</b> 🎉\n\n" \
                 f"Do'stlaringizni taklif qiling, yutish imkoniyatini oshiring! 🎁\n\n" \
-                f'👇 {html.bold("Quyidagi havolani do\'stlaringizga yuboring!")} 👇'
+                f'👇 <b>"Quyidagi havolani do\'stlaringizga yuboring!" </b> 👇'
 
     # Xabarni yuborish va ulashish tugmasini qo'shish
     await message.answer(
