@@ -229,9 +229,9 @@ async def start_bot(message: types.Message, command: CommandObject):
     post_text = f"📚 Muqqadima kitobini yutib olish imkoniyati! 🎉\n\n" \
                 f"Do'stlaringizni taklif qilib, ular bilan birga yutish imkoniyatini oshiring!"
     
-    user_text =  f"📚 {html.bold(value='Muqqadima kitobini yutib olish imkoniyati!')} 🎉\n\n" \
+    user_text =  f"📚 {html.bold('Muqqadima kitobini yutib olish imkoniyati!')} 🎉\n\n" \
                 f"Do'stlaringizni taklif qiling, yutish imkoniyatini oshiring! 🎁\n\n" \
-                f'👇 {html.bold(value="Quyidagi havolani do'stlaringizga yuboring!")} 👇'
+                f'👇 {html.bold("Quyidagi havolani do\'stlaringizga yuboring!")} 👇'
 
     # Xabarni yuborish va ulashish tugmasini qo'shish
     await message.answer(
