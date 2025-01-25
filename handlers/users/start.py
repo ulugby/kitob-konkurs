@@ -4,15 +4,18 @@ from aiogram import types,html
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import sqlite3
 from datetime import datetime
-from aiogram.types import  InlineKeyboardButton,InlineKeyboardMarkup
+from aiogram.types import  InlineKeyboardButton,InlineKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.types.reaction_type_emoji import ReactionTypeEmoji
 import random
 from data.config import ADMINS, USERS_CHANNEL
 import json,os
 
+from utils.misc.checksub import joinchat
 from docx import Document
 
 from aiogram.types import FSInputFile
+
+from urllib.parse import quote
 
 
 DATABASE_FILE = "bot.db"
@@ -155,6 +158,7 @@ async def start_bot(message: types.Message, command: CommandObject):
     is_premium = message.from_user.is_premium
 
 
+
     welcome_text = (
         f"👋 Assalamu alaykum, {html.bold(full_name)}!\n\n"
         "Sizni botimizda ko'rganimizdan xursandmiz! 🤖\n\n"
@@ -222,23 +226,31 @@ async def start_bot(message: types.Message, command: CommandObject):
             )
         except:
             pass
-        await message.answer(welcome_text)
+
+        await message.answer(welcome_text, disable_web_page_preview=True, reply_markup=ReplyKeyboardRemove())
+    is_subscribed = await joinchat(message.from_user.id)
+    if not is_subscribed:
+        return
+    
     bot_username = (await bot.me()).username
     referral_link = f"https://t.me/{bot_username}?start={get_user_referral_code(telegram_id)}\n\n"
 
-    post_text = f"📚 Muqqadima kitobini yutib olish imkoniyati! 🎉\n\n" \
-                f"Do'stlaringizni taklif qilib, ular bilan birga yutish imkoniyatini oshiring!"
+    post_text = "📚 Muqqadima kitobini yutib olish imkoniyati! 🎉\n\nDo'stlaringizni taklif qilib, ular bilan birga yutish imkoniyatini oshiring!"
+
     
     user_text =  f"📚 <b>Muqqadima kitobini yutib olish imkoniyati!'</b> 🎉\n\n" \
                 f"Do'stlaringizni taklif qiling, yutish imkoniyatini oshiring! 🎁\n\n" \
                 f'👇 <b>"Quyidagi havolani do\'stlaringizga yuboring!" </b> 👇'
+
+    encoded_referral_link = quote(referral_link, safe="")
+    encoded_post_text = quote(post_text, safe="")
 
     # Xabarni yuborish va ulashish tugmasini qo'shish
     await message.answer(
         user_text,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="Do'stlaringizni Taklif Qilish", url=f"https://t.me/share/url?url={referral_link}&text={post_text}")]
+                [InlineKeyboardButton(text="Do'stlaringizni Taklif Qilish", url=f"https://t.me/share/url?url={encoded_referral_link}&text={encoded_post_text}")]
             ]
         ),
     )

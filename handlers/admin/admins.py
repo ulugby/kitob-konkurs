@@ -5,7 +5,7 @@ from loader import dp,bot
 from aiogram.types.reaction_type_emoji import ReactionTypeEmoji
 from datetime import datetime, timedelta
 import sqlite3
-import random,os,json
+import random,os,json,uuid
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -498,6 +498,31 @@ async def check_sub(user_id):
     return True
 
 
+
+
+async def generate_and_send_file(sorted_detailed_info, message):
+    """
+    Top foydalanuvchilar haqidagi ma'lumotlarni Word faylga saqlaydi va yuboradi.
+    """
+    try:
+        document = Document()
+        document.add_heading("Top Foydalanuvchilar Haqida Ma'lumot", level=1)
+
+        for _, info in sorted_detailed_info:
+            document.add_paragraph(info)
+
+        file_name = f"top_users_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        document.save(file_name)
+
+        await message.answer_document(
+            FSInputFile(file_name),
+            caption="Top foydalanuvchilar haqidagi ma'lumotlar Word fayl shaklida yuborildi."
+        )
+
+    finally:
+        if os.path.exists(file_name):
+            os.remove(file_name)
+
 @dp.message(Command('top_users'), IsAdmin())
 async def show_top_users(message: types.Message):
     """
@@ -542,7 +567,7 @@ async def show_top_users(message: types.Message):
                 valid_invited_users.append(invited_id)
 
         # Har bir user haqida ma'lumotni tayyorlash
-        user_info = f"👤 <b>{full_name}</b> (@" \
+        user_info = f"👤 {full_name} (@" \
                     f"{username if username else 'username yo‘q'})\n"
         user_info += f"🆔 Telegram ID: {telegram_id}\n"
         user_info += f"👥 Taklif qilgan foydalanuvchilar soni: {len(invited_users_list)}\n"
@@ -558,24 +583,77 @@ async def show_top_users(message: types.Message):
     sorted_detailed_info = sorted(detailed_info, reverse=True, key=lambda x: x[0])
 
     # Javobni cheklash va kerak bo'lsa Word faylga saqlash
-    if sum(len(info[1]) for info in sorted_detailed_info) > 4000:
-        try:
-            document = Document()
-            document.add_heading("Top Foydalanuvchilar Haqida Ma'lumot", level=1)
+    if sum(len(info[1]) for info in sorted_detailed_info) > 400:
+        await generate_and_send_file(sorted_detailed_info, message)
 
-            for _, info in sorted_detailed_info:
-                document.add_paragraph(info)
-
-            file_name = f"top_users_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
-            document.save(file_name)
-
-            await message.answer_document(
-                FSInputFile(file_name),
-                caption="Top foydalanuvchilar haqidagi ma'lumotlar Word fayl shaklida yuborildi."
-            )
-        finally:
-            if os.path.exists(file_name):
-                os.remove(file_name)
     else:
+        # Faylni yuklab olish uchun tugmani qo‘shish
+        file_id = str(uuid.uuid4())  # Faylni noyob qilish uchun ID yaratish
+
         response += "\n".join(info for _, info in sorted_detailed_info)
-        await message.answer(response, parse_mode="HTML")
+        await message.answer(response, 
+        reply_markup = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="Faylni shaklida yuklab olish", callback_data=f"download_file_{file_id}")]
+            ]
+        ),)
+
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith('download_file_'))
+async def handle_download_file(callback_query: types.CallbackQuery):
+    """
+    Callback handler for downloading the file when the user clicks the inline button.
+    """
+    file_id = callback_query.data.split('_')[2]  # Faylni ID dan olish
+    # Faylni yaratib, yuborish
+    # Bu yerda `generate_and_send_file` funksiyasini chaqirishingiz mumkin.
+    # Agar fayl hozirda mavjud bo'lsa, uni yuborish.
+    
+    # Barcha kerakli ma'lumotlar va faylni yuborish
+    cursor.execute('''
+        SELECT 
+            u.id, u.full_name, u.username, u.telegram_id, u.referred_by, u.invited_users
+        FROM 
+            users u
+        WHERE
+            json_array_length(u.invited_users) > 0
+        ORDER BY
+            json_array_length(u.invited_users) DESC
+        LIMIT 500
+    ''')
+    users = cursor.fetchall()
+    
+    if not users:
+        await callback_query.answer("Foydalanuvchilar ma'lumotlari topilmadi.")
+        return
+
+    detailed_info = []
+    for user in users:
+        user_id, full_name, username, telegram_id, referred_by, invited_users = user
+        inviter_info = None
+        if referred_by:
+            cursor.execute('SELECT full_name, username FROM users WHERE id = ?', (referred_by,))
+            inviter_info = cursor.fetchone()
+
+        invited_users_list = json.loads(invited_users) if invited_users else []
+        valid_invited_users = []
+        for invited_id in invited_users_list:
+            if await check_sub(invited_id):
+                valid_invited_users.append(invited_id)
+
+        user_info = f"👤 {full_name} (@" \
+                    f"{username if username else 'username yo‘q'})\n"
+        user_info += f"🆔 Telegram ID: {telegram_id}\n"
+        user_info += f"👥 Taklif qilgan foydalanuvchilar soni: {len(invited_users_list)}\n"
+        user_info += f"✅ Obuna bo'lgan takliflar soni: {len(valid_invited_users)}\n"
+
+        if inviter_info:
+            user_info += f"🔗 Taklif qilgan: {inviter_info[0]} (@{inviter_info[1]})\n"
+
+        user_info += "\n"
+        detailed_info.append((len(valid_invited_users), user_info))
+
+    sorted_detailed_info = sorted(detailed_info, reverse=True, key=lambda x: x[0])
+    await generate_and_send_file(sorted_detailed_info, callback_query.message)
+    await callback_query.answer()

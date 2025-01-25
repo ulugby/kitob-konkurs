@@ -8,10 +8,12 @@ from aiogram.exceptions import TelegramAPIError
 
 from aiogram.types import ChatJoinRequest
 
-from handlers.users.start import show_referral_info, show_top_referrers
+from aiogram.filters import CommandObject
+
+
 from handlers.users.help import help_bot
 
-from middlewares.user_commands import user_commands
+
 
 
 DATABASE_FILE = "bot.db"
@@ -193,6 +195,7 @@ async def joinchat(user_id):
 async def check_subscription(callback_query: types.CallbackQuery):
     is_subscribed = await check_sub(callback_query.from_user.id)
     user_id = callback_query.from_user.id
+    from middlewares.user_commands import user_commands
     
     if is_subscribed:
         await bot.send_message(chat_id=callback_query.message.chat.id, text="Juda siz endi botni ishlatishingiz mumkin")
@@ -202,7 +205,8 @@ async def check_subscription(callback_query: types.CallbackQuery):
             # Create a copy of the dictionary to avoid modifying it while iterating
             for user_id in list(user_commands.keys()):
                 command_or_message = user_commands[user_id]
-                await process_user_command(command_or_message, callback_query.message)
+                command = CommandObject(command_or_message)
+                await process_user_command(command_or_message, callback_query.message, command)
 
                 # Clear after processing
                 del user_commands[user_id]
@@ -210,8 +214,12 @@ async def check_subscription(callback_query: types.CallbackQuery):
         await callback_query.answer("Iltimos, quyidagi kanallarimizga obuna bo'ling, keyin botni ishlatishingiz mumkin", show_alert=True)
 
 
-async def process_user_command(command_or_message: str, message: types.Message):
-    if command_or_message == '/referal':
+async def process_user_command(command_or_message: str, message: types.Message,  command: CommandObject):
+    from handlers.users.start import show_referral_info, show_top_referrers, start_bot
+
+    if command_or_message == '/start':
+        await start_bot(message, command)
+    elif command_or_message == '/referal':
         await show_referral_info(message)
     elif command_or_message == '/topreferals':
         await show_top_referrers(message)
