@@ -1,4 +1,4 @@
-bfrom aiogram.filters import CommandStart, CommandObject, Command
+from aiogram.filters import CommandStart, CommandObject, Command
 from loader import dp,bot
 from aiogram import types,html
 from aiogram.utils.keyboard import InlineKeyboardBuilder
