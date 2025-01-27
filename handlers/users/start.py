@@ -188,7 +188,7 @@ async def start_bot(message: types.Message, command: CommandObject):
             await bot.send_message(
                 chat_id=USERS_CHANNEL,
                 text=(
-                    f"New 👤: {html.escape(full_name)}\n"
+                    f"New 👤: {full_name}\n"
                     f"Username📩: {html.code(username)}\n"
                     f"Telegram 🆔: {html.code(str(telegram_id))}\n"
                     f"Reg 📆: {registration_date}\n"
@@ -204,7 +204,7 @@ async def start_bot(message: types.Message, command: CommandObject):
                     await bot.send_message(
                         chat_id=admin_id,
                         text=(
-                            f"New 👤: {html.escape(full_name)}\n"
+                            f"New 👤: {full_name}\n"
                             f"Username📩: {html.code(username)}\n"
                             f"Telegram 🆔: {html.code(str(telegram_id))}\n"
                             f"Reg 📆: {registration_date}\n"
